@@ -61,6 +61,7 @@ add_subdirectory(deps/src/easy_sources)
 add_subdirectory(deps/src/assimp)
 add_subdirectory(deps/src/meshoptimizer)
 add_subdirectory(deps/src/volk)
+add_subdirectory(deps/src/arcball-cpp)
 
 set(ENABLE_GLSLANG_BINARIES  OFF  CACHE BOOL "")
 set(ENABLE_HLSL              OFF  CACHE BOOL "")

@@ -158,6 +158,14 @@
     }
 },
 {
+    "name": "arcball-cpp",
+    "source": {
+        "type": "git",
+         "url": "https://github.com/Twinklebear/arcball-cpp",
+         "revision" : "d5263f2a9fe00e6178fdd928736990fd5b91d650"
+    }
+},
+{
     "name": "bistro/PropTextures",
     "source": {
         "type": "archive",

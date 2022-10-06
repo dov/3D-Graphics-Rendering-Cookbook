@@ -9,6 +9,7 @@
 #include <deque>
 #include <memory>
 #include <limits>
+#include <string>
 
 #include "shared/Utils.h"
 #include "shared/UtilsMath.h"
@@ -61,11 +62,17 @@ glm::vec3 cameraAngles(-45.0f, 0.0f, 0.0f);
 
 CameraPositioner_FirstPerson positioner_firstPerson(cameraPos, vec3(0.0f, 0.0f, -1.0f), vec3(0.0f, 1.0f, 0.0f));
 CameraPositioner_MoveTo      positioner_moveTo(cameraPos, cameraAngles);
+CameraPositioner_Trackball positioner_trackball(
+  (int)kScreenWidth, (int)kScreenHeight,
+  vec3(0.0f, 0.0f, -3.0f),   // eye
+  vec3(0.0f, 0.0f, -1.5f),   // center
+  vec3(0.0f, 1.0f, 0.0f));  // up
+
 Camera camera = Camera(positioner_firstPerson);
 
 // ImGUI stuff
 const char* cameraType = "FirstPerson";
-const char* comboBoxItems[] = { "FirstPerson", "MoveTo" };
+const char* comboBoxItems[] = { "FirstPerson", "MoveTo", "Trackball" };
 const char* currentComboBoxItem = cameraType;
 
 bool initVulkan()
@@ -83,6 +90,7 @@ bool initVulkan()
 	if (!initVulkanRenderDevice(vk, vkDev, kScreenWidth, kScreenHeight, isDeviceSuitable, { .geometryShader = VK_TRUE }))
 		exit(EXIT_FAILURE);
 
+  // Build all the renderers
 	imgui = std::make_unique<ImGuiRenderer>(vkDev);
 	modelRenderer = std::make_unique<ModelRenderer>(vkDev, "data/rubber_duck/scene.gltf", "data/ch2_sample3_STB.jpg", (uint32_t)sizeof(glm::mat4));
 	cubeRenderer = std::make_unique<CubeRenderer>(vkDev, modelRenderer->getDepthTexture(), "data/piazza_bologni_1k.hdr");
@@ -113,15 +121,14 @@ void reinitCamera()
 	{
 		camera = Camera(positioner_firstPerson);
 	}
-	else
-	{
-		if (!strcmp(cameraType, "MoveTo"))
-		{
-			positioner_moveTo.setDesiredPosition(cameraPos);
-			positioner_moveTo.setDesiredAngles(cameraAngles.x, cameraAngles.y, cameraAngles.z);
-			camera = Camera(positioner_moveTo);
-		}
+	else if (!strcmp(cameraType, "MoveTo"))
+  {
+    positioner_moveTo.setDesiredPosition(cameraPos);
+    positioner_moveTo.setDesiredAngles(cameraAngles.x, cameraAngles.y, cameraAngles.z);
+    camera = Camera(positioner_moveTo);
 	}
+  else if ((std::string)cameraType == "Trackball")
+    camera = Camera(positioner_trackball);
 }
 
 void renderGUI(uint32_t imageIndex)
@@ -160,8 +167,9 @@ void renderGUI(uint32_t imageIndex)
 				if (ImGui::Selectable(comboBoxItems[n], isSelected))
 					currentComboBoxItem = comboBoxItems[n];
 
-				if (isSelected)
+				if (isSelected) {
 					ImGui::SetItemDefaultFocus();   // You may set the initial focus when opening the combo (scrolling + for keyboard navigation support)
+        }
 			}
 			ImGui::EndCombo();
 		}
@@ -187,16 +195,22 @@ void renderGUI(uint32_t imageIndex)
 	imgui->updateBuffers(vkDev, imageIndex, ImGui::GetDrawData());
 }
 
+// Build the uniforms with the model view matrices.
 void update3D(uint32_t imageIndex)
 {
 	int width, height;
 	glfwGetFramebufferSize(window, &width, &height);
 	const float ratio = width / (float)height;
 
-	const mat4 m1 = glm::rotate(glm::translate(mat4(1.0f), vec3(0.f, 0.5f, -1.5f)) * glm::rotate(mat4(1.f), glm::pi<float>(), vec3(1, 0, 0)), (float)glfwGetTime(), vec3(0.0f, 1.0f, 0.0f));
+	const mat4 m1 = 
+    glm::rotate(glm::translate(mat4(1.0f), vec3(0.f, 0.5f, -1.5f))
+                * glm::rotate(mat4(1.f), glm::pi<float>(), vec3(1, 0, 0)),
+                (float)glfwGetTime(),
+                vec3(0.0f, 1.0f, 0.0f));
+	mat4 view = camera.getViewMatrix();
+
 	const mat4 p = glm::perspective(45.0f, ratio, 0.1f, 1000.0f);
 
-	const mat4 view = camera.getViewMatrix();
 	const mat4 mtx = p * view * m1;
 
 	{
@@ -204,7 +218,9 @@ void update3D(uint32_t imageIndex)
 		modelRenderer->updateUniformBuffer(vkDev, imageIndex, glm::value_ptr(mtx), sizeof(mat4));
 		canvas->updateUniformBuffer(vkDev, p * view, 0.0f, imageIndex);
 		canvas2d->updateUniformBuffer(vkDev, glm::ortho(0, 1, 1, 0), 0.0f, imageIndex);
-		cubeRenderer->updateUniformBuffer(vkDev, imageIndex, p * view * m1);
+    // Don't rotate the cube, but just flip it in y.
+    const mat4 vflip = glm::scale(mat4(1.0f), vec3(1.f,-1.f,1.f));
+		cubeRenderer->updateUniformBuffer(vkDev, imageIndex, p * view * vflip);
 		EASY_END_BLOCK;
 	}
 }
@@ -217,6 +233,8 @@ void update2D(uint32_t imageIndex)
 	canvas2d->updateBuffer(vkDev, imageIndex);
 }
 
+// Loop over all the renderers and have each one add its contents to the
+// command buffer.
 void composeFrame(uint32_t imageIndex, const std::vector<RendererBase*>& renderers)
 {
 	update3D(imageIndex);
@@ -337,6 +355,7 @@ int main()
 		[](auto* window, double x, double y)
 		{
 			ImGui::GetIO().MousePos = ImVec2((float)x, (float)y);
+      mouseState.pos = glm::vec2({(float)x,(float)y});
 		}
 	);
 
@@ -349,7 +368,9 @@ int main()
 			io.MouseDown[idx] = action == GLFW_PRESS;
 
 			if (button == GLFW_MOUSE_BUTTON_LEFT)
+      {
 				mouseState.pressedLeft = action == GLFW_PRESS;
+      }
 		}
 	);
 
@@ -385,14 +406,28 @@ int main()
 	double timeStamp = glfwGetTime();
 	float deltaSeconds = 0.0f;
 
-	const std::vector<RendererBase*> renderers = { clear.get(), cubeRenderer.get(), modelRenderer.get(), canvas.get(), canvas2d.get(), imgui.get(), finish.get() };
+  // List of all the renderers (in order?) for a single frame
+	const std::vector<RendererBase*> renderers = {
+    clear.get(),
+    cubeRenderer.get(),   // The "inside cube" renderer
+    modelRenderer.get(), 
+    canvas.get(),
+    canvas2d.get(),  
+    imgui.get(), 
+    finish.get()
+  };
 
 	while (!glfwWindowShouldClose(window))
 	{
 		{
-			EASY_BLOCK("UpdateCameraPositioners")
-			positioner_firstPerson.update(deltaSeconds, mouseState.pos, mouseState.pressedLeft);
-			positioner_moveTo.update(deltaSeconds, mouseState.pos, mouseState.pressedLeft);
+			EASY_BLOCK("UpdateCameraPositioners");
+
+      // something is not dealt with correctly with the mouse state!
+      positioner_firstPerson.update(deltaSeconds, 0.0f*mouseState.pos, mouseState.pressedLeft);
+      positioner_moveTo.update(deltaSeconds, 0.0f*mouseState.pos, mouseState.pressedLeft);
+      // Only operate on the trackball if it is in use
+      if ((std::string)cameraType == "Trackball")
+        positioner_trackball.update(deltaSeconds, mouseState.pos, mouseState.pressedLeft);
 			EASY_END_BLOCK;
 		}
 

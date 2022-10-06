@@ -5,7 +5,7 @@
 
 #include "shared/UtilsMath.h"
 #include "shared/Trackball.h"
-
+#include "arcball-cpp/arcball_camera.h"
 #include "glm/gtx/euler_angles.hpp"
 
 class CameraPositionerInterface
@@ -224,3 +224,58 @@ private:
 		return glm::vec3(clipAngle(d.x), clipAngle(d.y), clipAngle(d.z));
 	}
 };
+
+// An implementation of a trackball controlled camera based on the
+// github repo https://github.com/Twinklebear/arcball-cpp
+class CameraPositioner_Trackball final : public CameraPositionerInterface
+{
+public:
+	CameraPositioner_Trackball(int width, int height,
+                             // Define the arcball camera orientation
+                             glm::vec3 eye = glm::vec3 {0.0f,0.0f,-1.0f},
+                             glm::vec3 center = glm::vec3 {0.0f,1.0f,0.0f},
+                             glm::vec3 up = {0.0f,1.0f,0.0f}
+                             )
+    : width_(width),
+      height_(height),
+      // Initial arcball camera position
+      arcball_camera_(eye,center,up)
+  {
+  }
+
+  // Is this used? Where?
+  glm::vec3 getPosition() const override { return glm::vec3(0,0,0); }
+
+  // Translate the viewQuat to a glm::mat4 matrix
+  glm::mat4 getViewMatrix() const override
+  {
+    return arcball_camera_.transform();
+  }
+
+  // TBD: This should be updated with additional mouse buttons and
+  // zoom wheel.
+	void update(double deltaSeconds, const glm::vec2& mousePos, bool mousePressed)
+  {
+    if (mousePressed && !mousePressed_)
+      mousePos_ = mousePos;
+
+    mousePressed_ = mousePressed;
+
+    if (mousePressed)
+    {
+      // Normalize
+      glm::vec2 prev_mouse { mousePos_[0]/width_, mousePos_[1]/height_ };
+      glm::vec2 cur_mouse { mousePos[0]/width_, mousePos[1]/height_ };
+      arcball_camera_.rotate(prev_mouse, cur_mouse);
+      mousePos_ = mousePos;
+    }
+  }
+
+private:
+  glm::vec2 mousePos_ {0.0f,0.0f};
+  bool mousePressed_ = false;
+  int width_, height_;
+  ArcballCamera arcball_camera_;
+};
+
+

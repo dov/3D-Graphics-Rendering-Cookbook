@@ -4,6 +4,8 @@ project(Chapter4)
 
 include(../../CMake/CommonMacros.txt)
 
+include_directories(../../deps/src)
+include_directories(../..)
 include_directories(../../deps/src/imgui)
 include_directories(../../deps/src/vulkan/include)
 include_directories(../../shared)

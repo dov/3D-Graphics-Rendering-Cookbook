@@ -15,7 +15,7 @@ add_library(SharedUtils ${SRC_FILES} ${HEADER_FILES})
 set_property(TARGET SharedUtils PROPERTY CXX_STANDARD 20)
 set_property(TARGET SharedUtils PROPERTY CXX_STANDARD_REQUIRED ON)
 
-target_link_libraries(SharedUtils PUBLIC glad glfw volk glslang SPIRV assimp)
+target_link_libraries(SharedUtils PUBLIC glad glfw volk glslang SPIRV assimp arcball_camera)
 
 if(BUILD_WITH_EASY_PROFILER)
 	target_link_libraries(SharedUtils PUBLIC easy_profiler)
@@ -24,3 +24,4 @@ endif()
 if(BUILD_WITH_OPTICK)
 	target_link_libraries(SharedUtils PUBLIC OptickCore)
 endif()
+
