@@ -222,8 +222,7 @@ void update3D(uint32_t imageIndex)
 		canvas->updateUniformBuffer(vkDev, p * view, 0.0f, imageIndex);
 		canvas2d->updateUniformBuffer(vkDev, glm::ortho(0, 1, 1, 0), 0.0f, imageIndex);
     // Don't rotate the cube, but just flip it in y.
-    const mat4 vflip = glm::scale(mat4(1.0f), vec3(1.f,-1.f,1.f));
-		cubeRenderer->updateUniformBuffer(vkDev, imageIndex, p * view * vflip);
+		cubeRenderer->updateUniformBuffer(vkDev, imageIndex, p * view);
 		EASY_END_BLOCK;
 	}
 }

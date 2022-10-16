@@ -98,7 +98,7 @@ ModelRenderer::ModelRenderer(VulkanRenderDevice& vkDev, const char* modelFile, c
 		!createDescriptorPool(vkDev, 1, 2, 1, &descriptorPool_) ||
 		!createDescriptorSet(vkDev, uniformDataSize) ||
 		!createPipelineLayout(vkDev.device, descriptorSetLayout_, &pipelineLayout_) ||
-    !createGraphicsPipeline(vkDev, renderPass_, pipelineLayout_, {"data/shaders/chapter03/VK02.vert", "data/shaders/chapter03/VK02.frag", /* "data/shaders/chapter03/VK02.geom" */ }, &graphicsPipeline_))
+		!createGraphicsPipeline(vkDev, renderPass_, pipelineLayout_, {"data/shaders/chapter03/VK02.vert", "data/shaders/chapter03/VK02.frag", "data/shaders/chapter03/VK02.geom" }, &graphicsPipeline_))
 	{
 		printf("ModelRenderer: failed to create pipeline\n");
 		exit(EXIT_FAILURE);

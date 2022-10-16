@@ -2337,6 +2337,7 @@ bool createMIPTextureImage(VulkanRenderDevice& vkDev, const char* filename, uint
 bool createTextureImage(VulkanRenderDevice& vkDev, const char* filename, VkImage& textureImage, VkDeviceMemory& textureImageMemory, uint32_t* outTexWidth, uint32_t* outTexHeight)
 {
 	int texWidth, texHeight, texChannels;
+  stbi_set_flip_vertically_on_load(1);
 	stbi_uc* pixels = stbi_load(filename, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 
 	if (!pixels) {
