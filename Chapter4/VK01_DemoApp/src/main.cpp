@@ -27,9 +27,11 @@
 
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
+
 using glm::mat4;
 using glm::vec3;
 using glm::vec4;
+using namespace std;
 
 const uint32_t kScreenWidth = 1280;
 const uint32_t kScreenHeight = 720;
@@ -57,7 +59,8 @@ bool showEdge = true;
 struct MouseState
 {
 	glm::vec2 pos = glm::vec2(0.0f);
-	bool pressedLeft = false;
+	vector<bool> pressed = {false, false, false};
+	vector<double> scrollPos = {0.0, 0.0};
 } mouseState;
 
 glm::vec3 cameraPos(0.0f, 0.0f, 0.0f);
@@ -71,12 +74,12 @@ CameraPositioner_Trackball positioner_trackball(
   vec3(0.0f, 0.0f, -1.5f),   // center
   vec3(0.0f, 1.0f, 0.0f));  // up
 
-Camera camera = Camera(positioner_firstPerson);
+Camera camera = Camera(positioner_trackball);
 
 // ImGUI stuff
-const char* cameraType = "FirstPerson";
-const char* comboBoxItems[] = { "FirstPerson", "MoveTo", "Trackball" };
-const char* currentComboBoxItem = cameraType;
+string cameraType = "Trackball";
+string comboBoxItems[] = { "FirstPerson", "MoveTo", "Trackball" };
+string currentComboBoxItem = cameraType;
 
 bool initVulkan()
 {
@@ -123,11 +126,11 @@ void terminateVulkan()
 
 void reinitCamera()
 {
-	if (!strcmp(cameraType, "FirstPerson"))
+	if (cameraType == "FirstPerson")
 	{
 		camera = Camera(positioner_firstPerson);
 	}
-	else if (!strcmp(cameraType, "MoveTo"))
+	else if (cameraType == "MoveTo")
   {
     positioner_moveTo.setDesiredPosition(cameraPos);
     positioner_moveTo.setDesiredAngles(cameraAngles.x, cameraAngles.y, cameraAngles.z);
@@ -168,13 +171,13 @@ void renderGUI(uint32_t imageIndex)
   
 	ImGui::Begin("Camera Control", nullptr);
 	{
-		if (ImGui::BeginCombo("##combo", currentComboBoxItem)) // The second parameter is the label previewed before opening the combo.
+		if (ImGui::BeginCombo("##combo", currentComboBoxItem.c_str())) // The second parameter is the label previewed before opening the combo.
 		{
 			for (int n = 0; n < IM_ARRAYSIZE(comboBoxItems); n++)
 			{
 				const bool isSelected = (currentComboBoxItem == comboBoxItems[n]);
 
-				if (ImGui::Selectable(comboBoxItems[n], isSelected))
+				if (ImGui::Selectable(comboBoxItems[n].c_str(), isSelected))
 					currentComboBoxItem = comboBoxItems[n];
 
 				if (isSelected) {
@@ -184,7 +187,7 @@ void renderGUI(uint32_t imageIndex)
 			ImGui::EndCombo();
 		}
 
-		if (!strcmp(cameraType, "MoveTo"))
+		if (cameraType ==  "MoveTo")
 		{
 			if (ImGui::SliderFloat3("Position", glm::value_ptr(cameraPos), -10.0f, +10.0f))
 				positioner_moveTo.setDesiredPosition(cameraPos);
@@ -192,9 +195,9 @@ void renderGUI(uint32_t imageIndex)
 				positioner_moveTo.setDesiredAngles(cameraAngles);
 		}
 
-		if (currentComboBoxItem && strcmp(currentComboBoxItem, cameraType))
+		if (currentComboBoxItem.size() && currentComboBoxItem != cameraType)
 		{
-			printf("Selected new camera type: %s\n", currentComboBoxItem);
+			printf("Selected new camera type: %s\n", currentComboBoxItem.c_str());
 			cameraType = currentComboBoxItem;
 			reinitCamera();
 		}
@@ -377,11 +380,16 @@ int main()
 			auto& io = ImGui::GetIO();
 			const int idx = button == GLFW_MOUSE_BUTTON_LEFT ? 0 : button == GLFW_MOUSE_BUTTON_RIGHT ? 2 : 1;
 			io.MouseDown[idx] = action == GLFW_PRESS;
+      mouseState.pressed[int(button)] = action == GLFW_PRESS;
+		}
+	);
 
-			if (button == GLFW_MOUSE_BUTTON_LEFT)
-      {
-				mouseState.pressedLeft = action == GLFW_PRESS;
-      }
+	glfwSetScrollCallback(
+		window,
+		[](auto* window, double xscroll, double yscroll)
+		{
+      if (cameraType == "Trackball")
+        positioner_trackball.scrollEvent(xscroll, yscroll);
 		}
 	);
 
@@ -402,6 +410,9 @@ int main()
 				positioner_firstPerson.movement_.right_ = pressed;
 			if (key == GLFW_KEY_SPACE)
 				positioner_firstPerson.setUpVector(vec3(0.0f, 1.0f, 0.0f));
+
+      if (cameraType == "Trackball")
+        positioner_trackball.keyPressEvent(key, scancode, action, mods);
 		}
 	);
 
@@ -434,11 +445,11 @@ int main()
 			EASY_BLOCK("UpdateCameraPositioners");
 
       // something is not dealt with correctly with the mouse state!
-      positioner_firstPerson.update(deltaSeconds, 0.0f*mouseState.pos, mouseState.pressedLeft);
-      positioner_moveTo.update(deltaSeconds, 0.0f*mouseState.pos, mouseState.pressedLeft);
+      positioner_firstPerson.update(deltaSeconds, 0.0f*mouseState.pos, mouseState.pressed[0]);
+      positioner_moveTo.update(deltaSeconds, 0.0f*mouseState.pos, mouseState.pressed[0]);
       // Only operate on the trackball if it is in use
       if ((std::string)cameraType == "Trackball")
-        positioner_trackball.update(deltaSeconds, mouseState.pos, mouseState.pressedLeft);
+        positioner_trackball.update(deltaSeconds, mouseState.pos, mouseState.pressed);
 			EASY_END_BLOCK;
 		}
 

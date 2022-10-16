@@ -239,7 +239,8 @@ public:
     : width_(width),
       height_(height),
       // Initial arcball camera position
-      arcball_camera_(eye,center,up)
+      arcball_camera_(eye,center,up),
+      center_(center)
   {
   }
 
@@ -254,14 +255,20 @@ public:
 
   // TBD: This should be updated with additional mouse buttons and
   // zoom wheel.
-	void update(double deltaSeconds, const glm::vec2& mousePos, bool mousePressed)
+	void update(double deltaSeconds,
+              const glm::vec2& mousePos,
+              std::vector<bool> mousePressed)
   {
-    if (mousePressed && !mousePressed_)
+    if (mousePressed.size() < 3)
+      throw std::runtime_error("Need at least 3 mouse buttons");
+
+    // Currently hardcoded for mouse button 1
+    if (mousePressed[0] && !mousePressed_)
       mousePos_ = mousePos;
 
-    mousePressed_ = mousePressed;
+    mousePressed_ = mousePressed[0];
 
-    if (mousePressed)
+    if (mousePressed_)
     {
       // Normalize
       glm::vec2 prev_mouse { mousePos_[0]/width_, mousePos_[1]/height_ };
@@ -271,11 +278,43 @@ public:
     }
   }
 
+  // glfw actions
+  void scrollEvent(double xscroll, double yscroll)
+  {
+    if (yscroll < 0)
+      arcball_camera_.zoom(-0.2);
+    else if (yscroll > 0)
+      arcball_camera_.zoom(0.2);
+  }
+  
+  void keyPressEvent(int key, int scanCode, int action, int mods)
+  {
+    const bool pressed = (action != GLFW_RELEASE);
+    double distance = glm::length(arcball_camera_.eye() - center_);
+    if (key == GLFW_KEY_1 && pressed)
+    {
+      glm::vec3 eye = center_ - glm::vec3(0.f,0.f, -distance);
+      arcball_camera_ = ArcballCamera(eye, center_, glm::vec3(0.f,1.f,0.f));
+    }
+    if (key == GLFW_KEY_9 && pressed)
+    {
+      glm::vec3 eye = center_ - glm::vec3(-distance, 0.f,0.f);
+      arcball_camera_ = ArcballCamera(eye, center_, glm::vec3(0.f,1.f,0.f));
+    }
+    if (key == GLFW_KEY_7 && pressed)
+    {
+      glm::vec3 eye = center_ - glm::vec3(0.f,distance,0.0f);
+      arcball_camera_ = ArcballCamera(eye, center_, glm::vec3(0.f,0.0f,1.f));
+    }
+  }
+
 private:
   glm::vec2 mousePos_ {0.0f,0.0f};
+  std::vector<double> scrollPos_ = {0.0, 0.0};
   bool mousePressed_ = false;
   int width_, height_;
   ArcballCamera arcball_camera_;
+  glm::vec3 center_;
 };
 
 
