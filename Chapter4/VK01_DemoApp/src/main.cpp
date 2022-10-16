@@ -55,6 +55,7 @@ LinearGraph sineGraph(4096);
 
 // Whether to use shaders that render edges
 bool showEdge = true;
+bool ortho = false;
 
 struct MouseState
 {
@@ -170,6 +171,10 @@ void renderGUI(uint32_t imageIndex)
   ImGui::End();
   
 	ImGui::Begin("Camera Control", nullptr);
+	ImGui::Checkbox("Orthographic projection", &ortho);
+  ImGui::End();
+
+	ImGui::Begin("Camera Control", nullptr);
 	{
 		if (ImGui::BeginCombo("##combo", currentComboBoxItem.c_str())) // The second parameter is the label previewed before opening the combo.
 		{
@@ -220,9 +225,12 @@ void update3D(uint32_t imageIndex)
                 * glm::rotate(mat4(1.f), glm::pi<float>(), vec3(1, 0, 0)),
                 (float)glfwGetTime(),
                 vec3(0.0f, 1.0f, 0.0f));
-	mat4 view = camera.getViewMatrix();
 
-	const mat4 p = glm::perspective(45.0f, ratio, 0.1f, 1000.0f);
+  if (cameraType == "Trackball")
+    positioner_trackball.setOrthographic(ortho);
+
+	mat4 view = camera.getViewMatrix();
+  mat4 p = camera.getProjMatrix(ratio);
 
 	const mat4 mtx = p * view * m1;
 
@@ -410,6 +418,10 @@ int main()
 				positioner_firstPerson.movement_.right_ = pressed;
 			if (key == GLFW_KEY_SPACE)
 				positioner_firstPerson.setUpVector(vec3(0.0f, 1.0f, 0.0f));
+
+      // TBD: This should move to the camera
+			if (key == GLFW_KEY_KP_5 and pressed)
+        ortho = !ortho;
 
       if (cameraType == "Trackball")
         positioner_trackball.keyPressEvent(key, scancode, action, mods);

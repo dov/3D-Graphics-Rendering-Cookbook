@@ -8,6 +8,9 @@
 - Current status
 
   - The keyboard keys 9,7,1 may be used like in blender to rotate camera. Still not working on the numeric keyboard though.
+  - Added toggling of orthographic camera by imgui check button or by KP_5 
+  - [ ] Process keyboard binding for KP_5 in the camera interface
+
 
 # 3D Graphics Rendering Cookbook
 

@@ -14,6 +14,9 @@ public:
 	virtual ~CameraPositionerInterface() = default;
 	virtual glm::mat4 getViewMatrix() const = 0;
 	virtual glm::vec3 getPosition() const = 0;
+  virtual glm::mat4 getProjMatrix(float ratio) const {
+    return glm::perspective(45.0f, ratio, 0.1f, 1000.0f);
+  }
 };
 
 class Camera final
@@ -27,6 +30,7 @@ public:
 	Camera& operator = (const Camera&) = default;
 
 	glm::mat4 getViewMatrix() const { return positioner_->getViewMatrix(); }
+	glm::mat4 getProjMatrix(float ratio) const { return positioner_->getProjMatrix(ratio); }
 	glm::vec3 getPosition() const { return positioner_->getPosition(); }
 
 private:
@@ -239,7 +243,7 @@ public:
     : width_(width),
       height_(height),
       // Initial arcball camera position
-      arcball_camera_(eye,center,up),
+      arcballCamera_(eye,center,up),
       center_(center)
   {
   }
@@ -250,7 +254,20 @@ public:
   // Translate the viewQuat to a glm::mat4 matrix
   glm::mat4 getViewMatrix() const override
   {
-    return arcball_camera_.transform();
+    return arcballCamera_.transform();
+  }
+
+  // Get the projection matrix
+  glm::mat4 getProjMatrix(float ratio) const override
+  {
+    if (orthographic_)
+    {
+      // TBD - make this configurable
+      float s = orthographicSize_;
+      return glm::ortho(-s*ratio, s*ratio, -s, s, -1000.f, 1000.f);
+    }
+    else
+      return CameraPositionerInterface::getProjMatrix(ratio);
   }
 
   // TBD: This should be updated with additional mouse buttons and
@@ -273,7 +290,7 @@ public:
       // Normalize
       glm::vec2 prev_mouse { mousePos_[0]/width_, mousePos_[1]/height_ };
       glm::vec2 cur_mouse { mousePos[0]/width_, mousePos[1]/height_ };
-      arcball_camera_.rotate(prev_mouse, cur_mouse);
+      arcballCamera_.rotate(prev_mouse, cur_mouse);
       mousePos_ = mousePos;
     }
   }
@@ -281,31 +298,55 @@ public:
   // glfw actions
   void scrollEvent(double xscroll, double yscroll)
   {
-    if (yscroll < 0)
-      arcball_camera_.zoom(-0.2);
-    else if (yscroll > 0)
-      arcball_camera_.zoom(0.2);
+    if (orthographic_)
+    {
+      if (yscroll < 0)
+        orthographicSize_ /= 1.2;
+      else if (yscroll > 0)
+        orthographicSize_ *= 1.2;
+    }
+    else
+    {
+      if (yscroll < 0)
+        arcballCamera_.zoom(-0.2);
+      else if (yscroll > 0)
+        arcballCamera_.zoom(0.2);
+    }
   }
   
   void keyPressEvent(int key, int scanCode, int action, int mods)
   {
     const bool pressed = (action != GLFW_RELEASE);
-    double distance = glm::length(arcball_camera_.eye() - center_);
-    if (key == GLFW_KEY_1 && pressed)
+    if (!pressed)
+      return;
+
+    double distance = glm::length(arcballCamera_.eye() - center_);
+
+    // Keys like blender
+    if (key == GLFW_KEY_KP_1)
     {
+      // Note that up is in y!
       glm::vec3 eye = center_ - glm::vec3(0.f,0.f, -distance);
-      arcball_camera_ = ArcballCamera(eye, center_, glm::vec3(0.f,1.f,0.f));
+      arcballCamera_ = ArcballCamera(eye, center_, glm::vec3(0.f,1.f,0.f));
     }
-    if (key == GLFW_KEY_9 && pressed)
+    else if (key == GLFW_KEY_KP_3)
     {
       glm::vec3 eye = center_ - glm::vec3(-distance, 0.f,0.f);
-      arcball_camera_ = ArcballCamera(eye, center_, glm::vec3(0.f,1.f,0.f));
+      arcballCamera_ = ArcballCamera(eye, center_, glm::vec3(0.f,1.f,0.f));
     }
-    if (key == GLFW_KEY_7 && pressed)
+    else if (key == GLFW_KEY_KP_7)
     {
       glm::vec3 eye = center_ - glm::vec3(0.f,distance,0.0f);
-      arcball_camera_ = ArcballCamera(eye, center_, glm::vec3(0.f,0.0f,1.f));
+      arcballCamera_ = ArcballCamera(eye, center_, glm::vec3(0.f,0.0f,1.f));
     }
+    else
+      printf("key scan mods = %d %d %d\n", key, scanCode, mods);
+    
+  }
+
+  void setOrthographic(bool orthographic)
+  {
+    orthographic_ = orthographic;
   }
 
 private:
@@ -313,8 +354,10 @@ private:
   std::vector<double> scrollPos_ = {0.0, 0.0};
   bool mousePressed_ = false;
   int width_, height_;
-  ArcballCamera arcball_camera_;
+  ArcballCamera arcballCamera_;
   glm::vec3 center_;
+  bool orthographic_ = false;
+  double orthographicSize_ = 1.0;
 };
 
 
