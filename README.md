@@ -1,3 +1,7 @@
+# Dov's comments about this branch
+
+- This branch should show how to toggle edges through an imgui button. This has currenly not been implemented.
+
 # 3D Graphics Rendering Cookbook
 
 **A comprehensive guide to exploring rendering algorithms in modern OpenGL and Vulkan**
