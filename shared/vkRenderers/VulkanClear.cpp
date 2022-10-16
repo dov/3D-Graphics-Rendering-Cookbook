@@ -23,7 +23,7 @@ void VulkanClear::fillCommandBuffer(VkCommandBuffer commandBuffer, size_t swapFr
 
 	const VkClearValue clearValues[2] =
 	{
-		VkClearValue { .color = { 1.0f, 1.0f, 1.0f, 1.0f } },
+		VkClearValue { .color = { 0.0f, 0.0f, 0.4f, 1.0f } },
 		VkClearValue { .depthStencil = { 1.0f, 0 } }
 	};
 

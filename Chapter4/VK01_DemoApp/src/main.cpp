@@ -92,7 +92,10 @@ bool initVulkan()
 
   // Build all the renderers
 	imgui = std::make_unique<ImGuiRenderer>(vkDev);
-	modelRenderer = std::make_unique<ModelRenderer>(vkDev, "data/rubber_duck/scene.gltf", "data/ch2_sample3_STB.jpg", (uint32_t)sizeof(glm::mat4));
+	modelRenderer = std::make_unique<ModelRenderer>(vkDev, "data/rubber_duck/scene.gltf",
+                                                  // "data/ch2_sample3_STB.jpg",
+                                                  "data/rubber_duck/textures/Duck_baseColor.png",
+                                                  (uint32_t)sizeof(glm::mat4));
 	cubeRenderer = std::make_unique<CubeRenderer>(vkDev, modelRenderer->getDepthTexture(), "data/piazza_bologni_1k.hdr");
 	clear = std::make_unique<VulkanClear>(vkDev, modelRenderer->getDepthTexture());
 	finish = std::make_unique<VulkanFinish>(vkDev, modelRenderer->getDepthTexture());

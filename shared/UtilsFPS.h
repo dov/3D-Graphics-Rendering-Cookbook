@@ -34,7 +34,7 @@ public:
 
 	inline float getFPS() const { return currentFPS_; }
 
-	bool printFPS_ = true;
+	bool printFPS_ = false;
 
 private:
 	const float avgInterval_ = 0.5f;
