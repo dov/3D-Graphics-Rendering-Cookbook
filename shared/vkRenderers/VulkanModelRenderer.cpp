@@ -98,14 +98,15 @@ ModelRenderer::ModelRenderer(VulkanRenderDevice& vkDev, const char* modelFile, c
 		!createDescriptorPool(vkDev, 1, 2, 1, &descriptorPool_) ||
 		!createDescriptorSet(vkDev, uniformDataSize) ||
 		!createPipelineLayout(vkDev.device, descriptorSetLayout_, &pipelineLayout_) ||
-		!createGraphicsPipeline(vkDev, renderPass_, pipelineLayout_, {"data/shaders/chapter03/VK02.vert", "data/shaders/chapter03/VK02.frag", "data/shaders/chapter03/VK02.geom" }, &graphicsPipeline_))
+		!createGraphicsPipeline(vkDev, renderPass_, pipelineLayout_, {"data/shaders/chapter03/VK02.vert", "data/shaders/chapter03/VK02.frag", "data/shaders/chapter03/VK02.geom" }, &graphicsPipeline_) ||
+		!createGraphicsPipeline(vkDev, renderPass_, pipelineLayout_, {"data/shaders/chapter03/VK02.vert", "data/shaders/chapter03/VK02NoEdge.frag", "data/shaders/chapter03/VK02.geom" }, &graphicsPipelineNoEdge_)      )
 	{
 		printf("ModelRenderer: failed to create pipeline\n");
 		exit(EXIT_FAILURE);
 	}
 }
 
-ModelRenderer::ModelRenderer(VulkanRenderDevice& vkDev, bool useDepth, VkBuffer storageBuffer, VkDeviceMemory storageBufferMemory, uint32_t vertexBufferSize, uint32_t indexBufferSize, VulkanImage texture, VkSampler textureSampler, const std::vector<const char*>& shaderFiles, uint32_t uniformDataSize, bool useGeneralTextureLayout, VulkanImage externalDepth, bool deleteMeshData)
+ModelRenderer::ModelRenderer(VulkanRenderDevice& vkDev, bool useDepth, VkBuffer storageBuffer, VkDeviceMemory storageBufferMemory, uint32_t vertexBufferSize, uint32_t indexBufferSize, VulkanImage texture, VkSampler textureSampler, const std::vector<const char*>& shaderFiles, const std::vector<const char*>& shaderFilesNoEdge, uint32_t uniformDataSize, bool useGeneralTextureLayout, VulkanImage externalDepth, bool deleteMeshData)
 	: useGeneralTextureLayout_(useGeneralTextureLayout)
 	, vertexBufferSize_(vertexBufferSize)
 	, indexBufferSize_(indexBufferSize)
@@ -132,7 +133,9 @@ ModelRenderer::ModelRenderer(VulkanRenderDevice& vkDev, bool useDepth, VkBuffer 
 		!createDescriptorPool(vkDev, 1, 2, 1, &descriptorPool_) ||
 		!createDescriptorSet(vkDev, uniformDataSize) ||
 		!createPipelineLayout(vkDev.device, descriptorSetLayout_, &pipelineLayout_) ||
-		!createGraphicsPipeline(vkDev, renderPass_, pipelineLayout_, shaderFiles, &graphicsPipeline_))
+		!createGraphicsPipeline(vkDev, renderPass_, pipelineLayout_, shaderFiles, &graphicsPipeline_) ||
+		!createGraphicsPipeline(vkDev, renderPass_, pipelineLayout_, shaderFilesNoEdge, &graphicsPipelineNoEdge_)
+        )
 	{                                                                                               
 		printf("ModelRenderer: failed to create pipeline\n");
 		exit(EXIT_FAILURE);

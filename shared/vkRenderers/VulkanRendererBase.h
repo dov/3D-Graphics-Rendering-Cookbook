@@ -15,6 +15,7 @@ public:
 	virtual void fillCommandBuffer(VkCommandBuffer commandBuffer, size_t currentImage) = 0;
 
 	inline VulkanImage getDepthTexture() const { return depthTexture_; }
+  void setShowEdge(bool showEdge);
 
 protected:
 	void beginRenderPass(VkCommandBuffer commandBuffer, size_t currentImage);
@@ -24,6 +25,8 @@ protected:
 
 	uint32_t framebufferWidth_ = 0;
 	uint32_t framebufferHeight_ = 0;
+
+  bool showEdge_ = true; // Used to choose the pipeline to use
 
 	// Depth buffer
 	VulkanImage depthTexture_;
@@ -40,6 +43,7 @@ protected:
 	VkRenderPass renderPass_ = nullptr;
 	VkPipelineLayout pipelineLayout_ = nullptr;
 	VkPipeline graphicsPipeline_ = nullptr;
+	VkPipeline graphicsPipelineNoEdge_ = nullptr;
 
 	// 5. Uniform buffer
 	std::vector<VkBuffer> uniformBuffers_;

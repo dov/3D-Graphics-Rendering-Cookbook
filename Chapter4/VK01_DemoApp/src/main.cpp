@@ -51,6 +51,9 @@ FramesPerSecondCounter fpsCounter(0.02f);
 LinearGraph fpsGraph;
 LinearGraph sineGraph(4096);
 
+// Whether to use shaders that render edges
+bool showEdge = true;
+
 struct MouseState
 {
 	glm::vec2 pos = glm::vec2(0.0f);
@@ -159,6 +162,10 @@ void renderGUI(uint32_t imageIndex)
 	ImGui::Text("FPS: %.2f", fpsCounter.getFPS());
 	ImGui::End();
 
+	ImGui::Begin("Camera Control", nullptr);
+	ImGui::Checkbox("Show edges", &showEdge);
+  ImGui::End();
+  
 	ImGui::Begin("Camera Control", nullptr);
 	{
 		if (ImGui::BeginCombo("##combo", currentComboBoxItem)) // The second parameter is the label previewed before opening the combo.
@@ -278,6 +285,8 @@ bool drawFrame(const std::vector<RendererBase*>& renderers)
 	composeFrame(imageIndex, renderers);
 
 	const VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT }; // or even VERTEX_SHADER_STAGE
+
+  modelRenderer->setShowEdge(showEdge);
 
 	const VkSubmitInfo si =
 	{

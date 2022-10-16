@@ -18,6 +18,7 @@ RendererBase::~RendererBase()
 	vkDestroyRenderPass(device_, renderPass_, nullptr);
 	vkDestroyPipelineLayout(device_, pipelineLayout_, nullptr);
 	vkDestroyPipeline(device_, graphicsPipeline_, nullptr);
+	vkDestroyPipeline(device_, graphicsPipelineNoEdge_, nullptr);
 }
 
 void RendererBase::beginRenderPass(VkCommandBuffer commandBuffer, size_t currentImage)
@@ -36,7 +37,10 @@ void RendererBase::beginRenderPass(VkCommandBuffer commandBuffer, size_t current
 	};
 
 	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline_);
+  if (showEdge_)
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline_);
+  else
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineNoEdge_);
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout_, 0, 1, &descriptorSets_[currentImage], 0, nullptr);
 }
 
@@ -54,4 +58,9 @@ bool RendererBase::createUniformBuffers(VulkanRenderDevice& vkDev, size_t unifor
 		}
 	}
 	return true;
+}
+
+void RendererBase::setShowEdge(bool showEdge)
+{
+  showEdge_ = showEdge;
 }

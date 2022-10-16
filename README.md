@@ -1,6 +1,12 @@
 # Dov's comments about this branch
 
-- This branch should show how to toggle edges through an imgui button. This has currenly not been implemented.
+- This branch illustrates two concepts:
+
+   - How to use imgui to control a boolean variable
+   - How to setup two graphics pipelines, with and without edge rendering, that can be swapped in run time to either show and not show edges. This could be made more generic to allow setting up any number of pipelines.
+
+   Reference:
+     - https://vkguide.dev/docs/chapter-2/toggling_shaders/ - About switching pipelines
 
 # 3D Graphics Rendering Cookbook
 
